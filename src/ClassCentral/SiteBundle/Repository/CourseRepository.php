@@ -41,6 +41,7 @@ class CourseRepository extends EntityRepository{
             }
         }
 
+        $courseDetails['listed'] = $this->getListedCount($course);
         // Stream
         $stream = $course->getStream();
         $courseDetails['stream']['name'] = $stream->getName();
@@ -62,6 +63,17 @@ class CourseRepository extends EntityRepository{
             $courseDetails['initiative']['name'] = 'Independent';
             $courseDetails['initiative']['code'] = 'independent';
         }
+
+        // Language
+        $lang = array();
+        if($course->getLanguage())
+        {
+            $l = $course->getLanguage();
+            $lang['name'] = $l->getName();
+            $lang['slug'] = $l->getSlug();
+            $lang['code'] = $l->getCode();
+        }
+        $courseDetails['lang'] = $lang;
 
 
         // Institutions
@@ -158,5 +170,25 @@ class CourseRepository extends EntityRepository{
             ->setParameter('date', $dt->format("Y-m-d"));
 
         return $query->getQuery()->getResult();
+    }
+
+    /**
+     * Gets the count of number of times the course has been
+     * added to the users list
+     */
+    public function getListedCount( Course $course)
+    {
+        $query = $this->getEntityManager()->createQueryBuilder();
+        $query
+            ->add('select', 'count(uc.id) as listed')
+            ->add('from', 'ClassCentralSiteBundle:UserCourse uc')
+            ->join('uc.course','c')
+            ->andWhere('c.id = :id')
+            ->setParameter('id', $course->getId())
+            ;
+
+        $listed = $query->getQuery()->getSingleScalarResult();
+
+        return $listed;
     }
 }
